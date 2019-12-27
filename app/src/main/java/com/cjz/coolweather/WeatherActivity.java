@@ -80,12 +80,12 @@ public class WeatherActivity extends AppCompatActivity implements View.OnClickLi
         if (weatherString != null) {
             // 有缓存时直接解析天气数据
             Weather weather = Utility.handleWeatherResponse(weatherString);
-            showWeatherInfo(weather);
+            showWeatherInfo(weather);//把封装好的天气信息传递过去解析显示
         } else {
             // 无缓存时去服务器查询天气
-            String weatherId = getIntent().getStringExtra("weather_id");
-            weatherLayout.setVisibility(View.INVISIBLE);
-            requestWeather(weatherId);
+            String weatherId = getIntent().getStringExtra("weather_id");//获取携带过来的天气id
+            weatherLayout.setVisibility(View.INVISIBLE);//隐藏天气视图，但还占着空间
+            requestWeather(weatherId);//请求天气信息
         }
     }
 
@@ -93,23 +93,28 @@ public class WeatherActivity extends AppCompatActivity implements View.OnClickLi
      * 根据天气id请求城市天气信息。
      */
     public void requestWeather(final String weatherId) {
+        //拼接天气api链接
         String weatherUrl = "http://guolin.tech/api/weather?cityid=" + weatherId + "&key=bc0418b57b2d4918819d3974ac1285d9";
+        showProcessDialog();//显示“正在加载...”进度框
         HttpUtil.sendOkHttpRequest(weatherUrl, new Callback() {
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                WeatherActivity.this.mHandler.sendMessage(getMessage(1,1));
-                final String responseText = response.body().string();
-                final Weather weather = Utility.handleWeatherResponse(responseText);
+                final String responseText = response.body().string();//将获取到请求返回的数据转换成String类型
+                final Weather weather = Utility.handleWeatherResponse(responseText);//将转换成String类型的数据传过去解析，得到Weather天气信息对象
+
+                //子线程执行完要更新UI的时候，必须回到主线程来更新，实现这一功能常用的方法是执行Activity的runOnUiThread()方法
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         if (weather != null && "ok".equals(weather.getStatus())) {
-                            WeatherActivity.this.mHandler.sendMessage(getMessage(0,0));
+                            closeProcessDialog();
                             SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(WeatherActivity.this).edit();
                             editor.putString("weather", responseText);
                             editor.commit();
                             showWeatherInfo(weather);
                         } else {
+                            closeProcessDialog();
+                            titleText.setText("获取天气信息失败");
                             Toast.makeText(WeatherActivity.this, "获取天气信息失败", Toast.LENGTH_SHORT).show();
                         }
                     }
@@ -123,11 +128,11 @@ public class WeatherActivity extends AppCompatActivity implements View.OnClickLi
                     @Override
                     public void run() {
                         Toast.makeText(WeatherActivity.this, "获取天气信息失败", Toast.LENGTH_SHORT).show();
-//                        swipeRefresh.setRefreshing(false);
                     }
                 });
             }
         });
+
     }
 
     /**
@@ -208,25 +213,4 @@ public class WeatherActivity extends AppCompatActivity implements View.OnClickLi
         }
     }
 
-    public Message getMessage(int what, Object obj) {
-        Message message = Message.obtain();
-        message.what = what;
-        message.obj = obj;
-        return message;
-    }
-
-    Handler mHandler = new Handler() {
-        @Override
-        public void handleMessage(@NonNull final Message msg) {
-            switch (msg.what) {
-                case 0:
-                    closeProcessDialog();
-                    break;
-                case 1:
-                    showProcessDialog();
-                    break;
-            }
-            super.handleMessage(msg);
-        }
-    };
 }

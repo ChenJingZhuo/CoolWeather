@@ -4,7 +4,10 @@ import org.litepal.crud.DataSupport;
 
 public class City extends DataSupport {
 
+    //定义 Bean，继承 DataSupport
+    //id字段可写可不写，默认自动产生
     private int id;
+
     private String cityName;
     private int cityCode;
     private int provinceId;

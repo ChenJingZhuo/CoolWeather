@@ -10,4 +10,11 @@
         <mapping class="com.cjz.coolweather.db.County"/>
     </list>
 
+<!--
+dbname 定义数据库名。默认以 .db 结尾，如未以此结尾，则自动添加。
+version 定义数据库版本。辅助升级数据库。
+list 根据标签 mapping 对应的类创建表，成员变量对应字段。
+storage 定义数据库文件存储的地方，可选 internal 和 external， 默认为 internal
+-->
+
 </litepal>
